@@ -1,0 +1,121 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-bg-primary text-text-primary;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  }
+
+  /* Smooth scrolling */
+  html {
+    scroll-behavior: smooth;
+  }
+
+  /* Remove input zoom on iOS */
+  input, textarea, select {
+    font-size: 16px !important;
+  }
+
+  /* Custom scrollbar for dark theme */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-bg-secondary;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-bg-tertiary rounded;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-bg-quaternary;
+  }
+}
+
+@layer components {
+  /* Button base styles */
+  .btn {
+    @apply px-6 py-3 rounded-lg font-medium transition-all duration-200 min-h-touch-comfortable flex items-center justify-center;
+  }
+
+  .btn-primary {
+    @apply bg-primary text-bg-primary hover:bg-primary-hover;
+  }
+
+  .btn-secondary {
+    @apply bg-bg-tertiary text-text-primary hover:bg-bg-quaternary;
+  }
+
+  /* Chat message styles */
+  .message-user {
+    @apply bg-primary text-bg-primary rounded-[18px] rounded-br-sm p-3 max-w-[80%] ml-auto;
+  }
+
+  .message-ai {
+    @apply bg-bg-tertiary text-text-primary rounded-[18px] rounded-bl-sm p-3 max-w-[85%] mr-auto;
+  }
+
+  /* Tab styles */
+  .tab {
+    @apply px-4 py-3 text-text-secondary border-b-2 border-transparent transition-all duration-200 cursor-pointer;
+  }
+
+  .tab.active {
+    @apply text-text-primary border-primary;
+  }
+
+  /* Card styles */
+  .card {
+    @apply bg-bg-secondary rounded-lg p-6 border border-border-primary hover:border-border-secondary transition-all duration-200;
+  }
+}
+
+@layer utilities {
+  /* Typing animation for chat */
+  @keyframes typing {
+    0%, 60%, 100% {
+      opacity: 0.3;
+    }
+    30% {
+      opacity: 1;
+    }
+  }
+
+  .typing-dot {
+    animation: typing 1.4s infinite;
+  }
+
+  .typing-dot:nth-child(2) {
+    animation-delay: 0.2s;
+  }
+
+  .typing-dot:nth-child(3) {
+    animation-delay: 0.4s;
+  }
+
+  /* Loading skeleton animation */
+  @keyframes loading {
+    0% {
+      background-position: 200% 0;
+    }
+    100% {
+      background-position: -200% 0;
+    }
+  }
+
+  .skeleton {
+    background: linear-gradient(
+      90deg,
+      theme('colors.bg-tertiary') 25%,
+      theme('colors.bg-quaternary') 50%,
+      theme('colors.bg-tertiary') 75%
+    );
+    background-size: 200% 100%;
+    animation: loading 1.5s infinite;
+  }
+}
