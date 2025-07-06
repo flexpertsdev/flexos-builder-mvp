@@ -38,26 +38,38 @@
 }
 
 @layer components {
-  /* Button base styles */
+  /* Button base styles - matching mockup */
   .btn {
-    @apply px-6 py-3 rounded-lg font-medium transition-all duration-200 min-h-touch-comfortable flex items-center justify-center;
+    @apply px-4 py-2 rounded-md font-medium transition-all duration-200 text-sm flex items-center justify-center gap-2;
   }
 
   .btn-primary {
-    @apply bg-primary text-bg-primary hover:bg-primary-hover;
+    @apply bg-primary text-white hover:bg-primary-hover hover:transform hover:-translate-y-[1px] hover:shadow-lg;
   }
 
   .btn-secondary {
-    @apply bg-bg-tertiary text-text-primary hover:bg-bg-quaternary;
+    @apply bg-bg-tertiary text-text-secondary border border-border-primary hover:bg-bg-quaternary hover:text-text-primary;
   }
 
-  /* Chat message styles */
+  .btn-focus {
+    background: linear-gradient(135deg, #8B5CF6, #A855F7);
+    @apply text-white font-semibold hover:transform hover:-translate-y-[1px] hover:shadow-xl;
+  }
+
+  .btn-focus:hover {
+    background: linear-gradient(135deg, #7C3AED, #9333EA);
+    box-shadow: 0 8px 20px rgba(139, 92, 246, 0.3);
+  }
+
+  /* Chat message styles - WhatsApp style */
   .message-user {
-    @apply bg-primary text-bg-primary rounded-[18px] rounded-br-sm p-3 max-w-[80%] ml-auto;
+    background: rgba(22, 193, 129, 0.1);
+    border: 1px solid rgba(22, 193, 129, 0.2);
+    @apply text-text-primary rounded-xl rounded-br-sm px-4 py-3 max-w-[80%] ml-auto text-sm leading-relaxed;
   }
 
   .message-ai {
-    @apply bg-bg-tertiary text-text-primary rounded-[18px] rounded-bl-sm p-3 max-w-[85%] mr-auto;
+    @apply bg-bg-tertiary text-text-primary rounded-xl rounded-bl-sm px-4 py-3 max-w-[85%] mr-auto text-sm leading-relaxed;
   }
 
   /* Tab styles */
@@ -72,6 +84,34 @@
   /* Card styles */
   .card {
     @apply bg-bg-secondary rounded-lg p-6 border border-border-primary hover:border-border-secondary transition-all duration-200;
+  }
+
+  /* Context item styles - matching mockup */
+  .context-item {
+    @apply bg-bg-quaternary border border-border-secondary rounded-2xl px-3 py-1.5 text-xs flex items-center gap-1.5 text-text-secondary;
+  }
+
+  .context-item button {
+    @apply text-text-muted hover:text-error transition-colors w-3.5 h-3.5 flex items-center justify-center;
+  }
+
+  /* Input styles - WhatsApp style */
+  .input-container {
+    @apply bg-bg-tertiary border border-border-primary rounded-3xl flex items-end gap-2 p-2 transition-all duration-200;
+  }
+
+  .input-container:focus-within {
+    @apply border-primary;
+  }
+
+  /* Progress bar */
+  .progress-bar {
+    @apply h-2 bg-bg-tertiary rounded-full overflow-hidden;
+  }
+
+  .progress-fill {
+    background: linear-gradient(90deg, var(--primary), var(--accent));
+    @apply h-full transition-all duration-500;
   }
 }
 

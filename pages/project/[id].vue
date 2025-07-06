@@ -1,29 +1,40 @@
 <template>
   <div class="h-screen flex flex-col bg-bg-primary">
     <!-- Header -->
-    <header class="bg-bg-secondary border-b border-border-primary flex-shrink-0">
-      <div class="px-6 py-3 flex items-center justify-between">
+    <header class="bg-bg-secondary border-b border-border-primary flex-shrink-0 h-[60px]">
+      <div class="px-6 h-full flex items-center justify-between">
         <div class="flex items-center gap-4">
           <button 
-            @click="$router.push('/dashboard')"
-            class="text-text-secondary hover:text-text-primary transition-colors"
+            @click="showDashboard = true"
+            class="text-text-secondary hover:text-text-primary transition-colors p-2 -ml-2 rounded-md hover:bg-bg-tertiary"
+            title="Switch projects (Cmd+K)"
           >
-            ← Back
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
           </button>
-          <h1 class="text-xl font-semibold">{{ project?.name || 'New Project' }}</h1>
+          <div class="bg-bg-tertiary px-4 py-2 rounded-md border border-border-primary">
+            <h1 class="text-base font-medium">{{ project?.name || 'New Project' }}</h1>
+          </div>
         </div>
         
-        <div class="flex items-center gap-4">
+        <div class="flex items-center gap-3">
           <button 
             @click="enterFocusMode"
-            class="btn btn-secondary text-sm"
+            class="btn btn-focus"
           >
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+            </svg>
             Focus Mode
           </button>
           <button 
             @click="exportDocumentation"
-            class="btn btn-primary text-sm"
+            class="btn btn-primary"
           >
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3M3 17V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
+            </svg>
             Export Docs
           </button>
         </div>
@@ -71,12 +82,26 @@
     <div class="flex-1 flex overflow-hidden">
       <!-- Left Panel: Chat (40%) -->
       <div class="w-2/5 flex flex-col bg-bg-primary border-r border-border-primary">
-        <ChatPanel 
-          :messages="messages" 
-          :context="contextItems"
-          @send="handleSendMessage"
-          @attach="handleAttachment"
-        />
+        <!-- Progress indicator -->
+        <div class="p-4 border-b border-border-primary">
+          <ProgressIndicator
+            :conversations="messages"
+            :features="features"
+            :pages="pages"
+            :journeys="journeys"
+            :mockups="mockups"
+          />
+        </div>
+        
+        <!-- Chat panel -->
+        <div class="flex-1 flex flex-col">
+          <ChatPanel 
+            :messages="messages" 
+            :context="contextItems"
+            @send="handleSendMessage"
+            @attach="handleAttachment"
+          />
+        </div>
       </div>
       
       <!-- Right Panel: Content (60%) -->
@@ -172,6 +197,14 @@
         </div>
       </div>
     </div>
+    
+    <!-- Dashboard Overlay -->
+    <DashboardOverlay
+      :isOpen="showDashboard"
+      :currentProjectId="projectId"
+      @close="showDashboard = false"
+      @switch="handleProjectSwitch"
+    />
   </div>
 </template>
 
@@ -182,6 +215,8 @@ import { useStorage } from '~/composables/useStorage'
 import ChatPanel from '~/components/ChatPanel.vue'
 import ContentPanel from '~/components/ContentPanel.vue'
 import FocusMode from '~/components/FocusMode.vue'
+import ProgressIndicator from '~/components/ProgressIndicator.vue'
+import DashboardOverlay from '~/components/DashboardOverlay.vue'
 
 // Use auth middleware
 definePageMeta({
@@ -205,6 +240,7 @@ const mockups = ref([])
 const activeTab = ref('vision')
 const showFocusMode = ref(false)
 const showAddContext = ref(false)
+const showDashboard = ref(false)
 
 // Context management
 const contextItems = ref({
@@ -485,6 +521,11 @@ const enterFocusMode = () => {
   showFocusMode.value = true
 }
 
+// Handle project switch from dashboard overlay
+const handleProjectSwitch = (projectId) => {
+  // Dashboard overlay handles the navigation
+}
+
 // Initialize
 onMounted(() => {
   loadProjectData()
@@ -499,11 +540,5 @@ watch(() => project.value?.name, (newName) => {
 </script>
 
 <style scoped>
-.context-item {
-  @apply flex items-center gap-1 px-2 py-1 bg-bg-tertiary rounded-md text-xs;
-}
-
-.context-item button {
-  @apply opacity-60 hover:opacity-100 transition-opacity;
-}
+/* Using the global context-item styles from main.css */
 </style>

@@ -3,12 +3,12 @@
     <!-- Simple Hero Section -->
     <div class="flex-1 flex items-center justify-center px-6">
       <div class="max-w-3xl mx-auto text-center">
-        <h1 class="text-4xl md:text-5xl font-bold mb-6">
+        <h1 class="text-4xl md:text-5xl font-bold mb-6 leading-tight">
           From confused idea to complete documentation
-          <span class="text-primary"> in under 2 hours</span>
+          <span class="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent"> in under 2 hours</span>
         </h1>
         
-        <p class="text-xl text-text-secondary mb-8 max-w-2xl mx-auto">
+        <p class="text-xl text-text-secondary mb-10 max-w-2xl mx-auto leading-relaxed">
           Transform your app idea into comprehensive documentation through natural conversation. 
           No technical knowledge required.
         </p>
@@ -16,14 +16,17 @@
         <div class="flex flex-col sm:flex-row gap-4 justify-center">
           <button 
             @click="$router.push('/login')"
-            class="btn btn-primary text-lg"
+            class="btn btn-primary shadow-lg hover:shadow-xl"
           >
-            Start Your Free Session
+            <span>Start Your Free Session</span>
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3" />
+            </svg>
           </button>
           
           <button 
             @click="scrollToDemo"
-            class="btn btn-secondary text-lg"
+            class="btn btn-secondary"
           >
             See How It Works
           </button>

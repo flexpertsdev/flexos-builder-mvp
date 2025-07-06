@@ -1,8 +1,9 @@
 <template>
-  <div class="min-h-screen flex items-center justify-center px-6">
+  <div class="min-h-screen flex items-center justify-center px-6 bg-gradient-to-br from-bg-secondary via-bg-primary to-bg-primary">
     <div class="w-full max-w-md">
-      <div class="bg-bg-secondary rounded-lg p-8">
-        <h1 class="text-2xl font-bold mb-6 text-center">Welcome Back</h1>
+      <div class="bg-bg-secondary rounded-xl p-8 shadow-2xl border border-border-primary">
+        <h1 class="text-3xl font-bold mb-2 text-center">Welcome Back</h1>
+        <p class="text-text-secondary text-center mb-8">Sign in to continue building</p>
         
         <form @submit.prevent="handleLogin">
           <div class="space-y-4">
@@ -53,8 +54,8 @@
         </div>
         
         <!-- Demo mode notice -->
-        <div class="mt-6 p-4 bg-bg-tertiary rounded-lg text-sm text-text-secondary text-center">
-          <p>Demo Mode: Use any email/password to continue</p>
+        <div class="mt-6 p-4 bg-accent bg-opacity-10 border border-accent border-opacity-20 rounded-lg text-sm text-accent text-center">
+          <p class="font-medium">Demo Mode: Use any email/password to continue</p>
         </div>
       </div>
     </div>
