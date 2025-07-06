@@ -64,8 +64,10 @@
 <script setup>
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { useStorage } from '~/composables/useStorage'
 
 const router = useRouter()
+const storage = useStorage()
 const email = ref('')
 const password = ref('')
 const loading = ref(false)
@@ -76,12 +78,13 @@ const handleLogin = async () => {
   // Mock login - just simulate a delay
   await new Promise(resolve => setTimeout(resolve, 1000))
   
-  // Store fake user in localStorage
-  localStorage.setItem('user', JSON.stringify({
-    id: 'demo-user',
+  // Store user using the storage composable
+  storage.setUser({
+    id: `user-${Date.now()}`,
     email: email.value,
-    name: email.value.split('@')[0]
-  }))
+    name: email.value.split('@')[0],
+    createdAt: new Date().toISOString()
+  })
   
   // Redirect to dashboard
   router.push('/dashboard')

@@ -1,7 +1,10 @@
+import { useStorage } from '~/composables/useStorage'
+
 export default defineNuxtRouteMiddleware((to, from) => {
   // Only run on client side
   if (process.client) {
-    const user = localStorage.getItem('user')
+    const storage = useStorage()
+    const user = storage.getUser()
     
     // Protected routes
     const protectedRoutes = ['/dashboard', '/project']
