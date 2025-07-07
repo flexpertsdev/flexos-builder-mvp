@@ -75,11 +75,27 @@ For persistent data and real AI features:
 
 ### Build Fails with "Secrets detected"
 
-This means API keys were found in the build output:
+This means API keys were found in the build output. This is a Netlify security feature.
 
-1. **Never commit .env files**
-2. **Use Netlify environment variables**
-3. **Check that .env is in .gitignore**
+**Solutions:**
+
+1. **Recommended: Use Environment Variables Only**
+   - Don't set API keys in code or .env files
+   - Add them ONLY in Netlify Dashboard → Environment Variables
+   - The app now properly reads from `process.env` at runtime
+
+2. **If Still Failing:**
+   - Add to Netlify environment variables:
+     ```
+     SECRETS_SCAN_SMART_DETECTION_OMIT_VALUES=sk-*
+     ```
+   - This tells Netlify to ignore these patterns
+   - ⚠️ Use with caution - only if you're sure keys are secure
+
+3. **Prevention:**
+   - Never commit .env files
+   - Use empty strings in nuxt.config.ts runtimeConfig
+   - Access keys only via process.env in server code
 
 ### Login Not Working
 

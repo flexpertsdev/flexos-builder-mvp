@@ -6,15 +6,16 @@ export default defineNuxtConfig({
   css: ['~/assets/css/main.css'],
   
   runtimeConfig: {
-    // Private keys that are exposed to the server
-    supabaseServiceKey: process.env.SUPABASE_SERVICE_KEY,
-    openaiApiKey: process.env.OPENAI_API_KEY,
-    anthropicApiKey: process.env.ANTHROPIC_API_KEY,
+    // Private keys that are exposed to the server ONLY
+    // These are replaced with empty strings during build
+    supabaseServiceKey: '',
+    openaiApiKey: '',
+    anthropicApiKey: '',
     
     // Public keys that are exposed to the client
     public: {
-      supabaseUrl: process.env.SUPABASE_URL,
-      supabaseAnonKey: process.env.SUPABASE_ANON_KEY,
+      supabaseUrl: process.env.SUPABASE_URL || '',
+      supabaseAnonKey: process.env.SUPABASE_ANON_KEY || '',
       appUrl: process.env.APP_URL || 'http://localhost:3000'
     }
   },

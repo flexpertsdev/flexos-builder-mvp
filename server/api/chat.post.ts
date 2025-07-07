@@ -5,10 +5,10 @@ export default defineEventHandler(async (event) => {
   const body = await readBody(event)
   const { messages, projectContext, activeTab } = body
   
-  // Get runtime config
-  const config = useRuntimeConfig()
-  const openaiKey = config.openaiApiKey
-  const anthropicKey = config.anthropicApiKey
+  // Get runtime config - access at runtime only
+  const config = useRuntimeConfig(event)
+  const openaiKey = process.env.OPENAI_API_KEY || config.openaiApiKey || ''
+  const anthropicKey = process.env.ANTHROPIC_API_KEY || config.anthropicApiKey || ''
   
   // Check if in demo mode
   if (!openaiKey && !anthropicKey) {
