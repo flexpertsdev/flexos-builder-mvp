@@ -71,38 +71,43 @@ npm run preview
 
 ## 📦 Deployment
 
-### Deploy to Netlify (Recommended)
+### Quick Deploy (Demo Mode - No Config Required!)
 
-1. **Via Netlify UI**:
-   - Fork this repository
-   - Connect to Netlify
-   - Deploy with default settings
+[![Deploy to Netlify](https://www.netlify.com/img/deploy/button.svg)](https://app.netlify.com/start/deploy?repository=https://github.com/flexpertsdev/flexos-builder-mvp)
 
-2. **Via Netlify CLI**:
-   ```bash
-   # Install Netlify CLI
-   npm install -g netlify-cli
-   
-   # Build the project
-   npm run build
-   
-   # Deploy to Netlify
-   netlify deploy --prod --dir=.output/public
-   ```
+**🎉 Works immediately!** The app runs in demo mode by default - no configuration needed.
 
-3. **One-Click Deploy**:
-   
-   [![Deploy to Netlify](https://www.netlify.com/img/deploy/button.svg)](https://app.netlify.com/start/deploy?repository=https://github.com/flexpertsdev/flexos-builder-mvp)
+### Deployment Options
+
+1. **Demo Mode** (Default - Recommended for testing):
+   - Deploy with one click
+   - Sign up/login with any email/password
+   - All features work with mock AI
+   - Data stored in browser
+
+2. **Production Mode** (Optional):
+   - Add Supabase for persistent auth
+   - Add OpenAI/Anthropic for real AI
+   - See [DEPLOYMENT_GUIDE.md](./DEPLOYMENT_GUIDE.md) for setup
+
+### Deploy to Netlify
+
+```bash
+# Via Netlify CLI
+npm install -g netlify-cli
+npm run build
+netlify deploy --prod --dir=.output/public
+```
 
 ### Deploy to Vercel
 
 ```bash
-# Install Vercel CLI
+# Via Vercel CLI
 npm install -g vercel
-
-# Deploy
 vercel
 ```
+
+**⚠️ Important**: Never commit API keys! See [DEPLOYMENT_GUIDE.md](./DEPLOYMENT_GUIDE.md) for secure deployment.
 
 ## 🏗️ Tech Stack
 
