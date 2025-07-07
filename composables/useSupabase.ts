@@ -7,33 +7,120 @@ export const useSupabase = () => {
   
   // Return demo mode functions if Supabase is not configured
   if (!$supabase) {
+    // Demo mode session management
+    const DEMO_SESSION_KEY = 'flexos_demo_session'
+    
+    // Initialize demo user from localStorage
+    const initDemoUser = () => {
+      if (process.client) {
+        const storedSession = localStorage.getItem(DEMO_SESSION_KEY)
+        if (storedSession) {
+          try {
+            const parsed = JSON.parse(storedSession)
+            user.value = parsed.user
+            session.value = parsed.session
+          } catch (e) {
+            // Invalid session, clear it
+            localStorage.removeItem(DEMO_SESSION_KEY)
+          }
+        }
+      }
+    }
+    
+    // Save demo session to localStorage
+    const saveDemoSession = (demoUser: any) => {
+      if (process.client) {
+        const demoSession = {
+          user: demoUser,
+          session: {
+            access_token: 'demo-token',
+            refresh_token: 'demo-refresh',
+            expires_at: Date.now() + 7 * 24 * 60 * 60 * 1000 // 7 days
+          }
+        }
+        localStorage.setItem(DEMO_SESSION_KEY, JSON.stringify(demoSession))
+        user.value = demoUser
+        session.value = demoSession.session as any
+      }
+    }
+    
+    // Initialize on client
+    if (process.client) {
+      initDemoUser()
+    }
+    
     return {
       user: readonly(user),
       session: readonly(session),
       signIn: async (email: string, password: string) => {
         // Demo mode - accept any credentials
-        user.value = {
-          id: `demo-${Date.now()}`,
+        const demoUser = {
+          id: `demo-${email.replace('@', '-at-').replace('.', '-')}`,
           email,
-          created_at: new Date().toISOString()
+          created_at: new Date().toISOString(),
+          app_metadata: { provider: 'demo' },
+          user_metadata: { full_name: email.split('@')[0] }
         } as any
-        return { data: { user: user.value, session: {} }, error: null }
+        
+        saveDemoSession(demoUser)
+        
+        return { data: { user: demoUser, session: session.value }, error: null }
       },
-      signUp: async (email: string, password: string) => {
+      signUp: async (email: string, password: string, metadata?: any) => {
         // Demo mode - accept any credentials
-        user.value = {
-          id: `demo-${Date.now()}`,
+        const demoUser = {
+          id: `demo-${email.replace('@', '-at-').replace('.', '-')}`,
           email,
-          created_at: new Date().toISOString()
+          created_at: new Date().toISOString(),
+          app_metadata: { provider: 'demo' },
+          user_metadata: metadata || { full_name: email.split('@')[0] }
         } as any
-        return { data: { user: user.value, session: {} }, error: null }
+        
+        saveDemoSession(demoUser)
+        
+        return { data: { user: demoUser, session: session.value }, error: null }
       },
       signOut: async () => {
         user.value = null
         session.value = null
+        if (process.client) {
+          localStorage.removeItem(DEMO_SESSION_KEY)
+        }
         return { error: null }
       },
-      isAuthenticated: computed(() => !!user.value)
+      signInWithProvider: async (provider: string) => {
+        // Demo mode - simulate OAuth
+        const demoUser = {
+          id: `demo-${provider}-${Date.now()}`,
+          email: `user@${provider}.demo`,
+          created_at: new Date().toISOString(),
+          app_metadata: { provider },
+          user_metadata: { full_name: `${provider} User` }
+        } as any
+        
+        saveDemoSession(demoUser)
+        
+        // Simulate redirect
+        if (process.client) {
+          await navigateTo('/dashboard')
+        }
+        
+        return { data: { url: '/dashboard', provider }, error: null }
+      },
+      getUser: async () => {
+        return user.value
+      },
+      updateUser: async (metadata: any) => {
+        if (user.value) {
+          user.value = { ...user.value, user_metadata: { ...user.value.user_metadata, ...metadata } }
+          saveDemoSession(user.value)
+        }
+        return { data: { user: user.value }, error: null }
+      },
+      isAuthenticated: computed(() => !!user.value),
+      initUser: async () => {
+        initDemoUser()
+      }
     }
   }
   

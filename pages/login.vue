@@ -98,8 +98,10 @@
         </div>
         
         <!-- Demo mode notice -->
-        <div v-if="isDemo" class="mt-6 p-4 bg-accent bg-opacity-10 border border-accent border-opacity-20 rounded-lg text-sm text-accent text-center">
-          <p class="font-medium">Demo Mode: Use any email/password to continue</p>
+        <div v-if="isDemo" class="mt-6 p-4 bg-accent bg-opacity-10 border border-accent border-opacity-20 rounded-lg text-center">
+          <p class="font-medium text-accent mb-2">🚀 Demo Mode Active</p>
+          <p class="text-sm text-text-secondary">Use any email/password to explore the app</p>
+          <p class="text-xs text-text-muted mt-2">Your data is stored locally in this browser</p>
         </div>
       </div>
     </div>

@@ -33,6 +33,12 @@ npm run dev
 
 Visit `http://localhost:3000`
 
+**🎉 No configuration needed!** The app runs in demo mode by default:
+- Sign up/login with any email and password
+- All features work normally
+- Data is stored locally in your browser
+- See [SETUP_AUTH.md](./SETUP_AUTH.md) to enable persistent authentication
+
 ### Production Setup
 
 1. **Configure Supabase** (Optional but recommended):

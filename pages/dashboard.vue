@@ -14,6 +14,26 @@
       </div>
     </header>
     
+    <!-- Demo mode banner -->
+    <div v-if="isDemoMode" class="bg-accent bg-opacity-10 border-b border-accent border-opacity-20">
+      <div class="max-w-7xl mx-auto px-6 py-3 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <span class="text-accent">🚀</span>
+          <p class="text-sm">
+            <span class="font-medium text-accent">Demo Mode:</span>
+            <span class="text-text-secondary ml-1">Your data is stored locally in this browser</span>
+          </p>
+        </div>
+        <a 
+          href="https://github.com/flexpertsdev/flexos-builder-mvp#setup" 
+          target="_blank"
+          class="text-xs text-accent hover:underline"
+        >
+          Setup Guide →
+        </a>
+      </div>
+    </div>
+    
     <!-- Dashboard content -->
     <div class="max-w-7xl mx-auto px-6 py-8">
       <div class="mb-8">
@@ -71,6 +91,7 @@
 import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useStorage } from '~/composables/useStorage'
+import { useSupabase } from '~/composables/useSupabase'
 
 // Use auth middleware
 definePageMeta({
@@ -79,6 +100,11 @@ definePageMeta({
 
 const router = useRouter()
 const storage = useStorage()
+const { user, signOut } = useSupabase()
+const { $supabase } = useNuxtApp()
+
+// Check if in demo mode
+const isDemoMode = computed(() => !$supabase)
 
 // Projects from localStorage
 const projects = ref([])
@@ -207,7 +233,8 @@ const createNewProject = () => {
   router.push(`/project/${newProjectId}`)
 }
 
-const handleLogout = () => {
+const handleLogout = async () => {
+  await signOut()
   storage.clearUser()
   router.push('/')
 }

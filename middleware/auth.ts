@@ -2,7 +2,7 @@ export default defineNuxtRouteMiddleware(async (to, from) => {
   const { isAuthenticated, initUser } = useSupabase()
   
   // Initialize user on first load
-  if (process.client && !isAuthenticated.value) {
+  if (process.client) {
     await initUser()
   }
   
@@ -10,6 +10,7 @@ export default defineNuxtRouteMiddleware(async (to, from) => {
   const protectedRoutes = ['/dashboard', '/project']
   const isProtectedRoute = protectedRoutes.some(route => to.path.startsWith(route))
   
+  // Check authentication after initialization
   if (isProtectedRoute && !isAuthenticated.value) {
     return navigateTo('/login')
   }
