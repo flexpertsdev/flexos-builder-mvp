@@ -218,8 +218,9 @@ export interface Database {
       project_id: string
       page_id: string | null
       name: string
-      type: 'wireframe' | 'highfidelity' | 'prototype'
+      type: 'wireframe' | 'highfidelity' | 'prototype' | 'Page' | 'Component' | 'Flow'
       content: any
+      html: string | null
       screenshot_url: string | null
       annotations: any[]
       version: number
@@ -231,8 +232,9 @@ export interface Database {
       project_id: string
       page_id?: string | null
       name: string
-      type?: 'wireframe' | 'highfidelity' | 'prototype'
+      type?: 'wireframe' | 'highfidelity' | 'prototype' | 'Page' | 'Component' | 'Flow'
       content?: any
+      html?: string | null
       screenshot_url?: string | null
       annotations?: any[]
       version?: number
@@ -244,8 +246,9 @@ export interface Database {
       project_id?: string
       page_id?: string | null
       name?: string
-      type?: 'wireframe' | 'highfidelity' | 'prototype'
+      type?: 'wireframe' | 'highfidelity' | 'prototype' | 'Page' | 'Component' | 'Flow'
       content?: any
+      html?: string | null
       screenshot_url?: string | null
       annotations?: any[]
       version?: number

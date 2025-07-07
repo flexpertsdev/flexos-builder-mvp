@@ -49,7 +49,7 @@ async function streamOpenAIChat(event: any, apiKey: string, messages: any[], pro
       ...messages
     ],
     temperature: 0.7,
-    max_tokens: 1000,
+    max_tokens: 4096,
     stream: true,
     response_format: { type: "json_object" }
   })
@@ -108,8 +108,8 @@ async function streamAnthropicChat(event: any, apiKey: string, messages: any[], 
   }))
   
   const stream = await anthropic.messages.create({
-    model: 'claude-3-opus-20240229',
-    max_tokens: 1000,
+    model: 'claude-sonnet-4-20250514',
+    max_tokens: 4096,
     temperature: 0.7,
     system: systemPrompt,
     messages: anthropicMessages,
@@ -255,12 +255,13 @@ SUGGESTION TYPES:
 - feature: { name, description, priority, category }
 - page: { name, description, type, sections }
 - journey: { name, description, steps: [{title, description}] }
-- mockup: { name, description, type }
+- mockup: { name, description, type, content }
 
 ACTION TYPES:
 - update_vision: { vision }
 - update_description: { description }
 - update_target_audience: { targetAudience }
+- create_mockup: { name, description, type, content }
 
 RULES:
 1. ALWAYS return valid JSON
@@ -287,11 +288,31 @@ You are helping define the project vision. Ask ONE specific question about:
 - The desired outcome for users`,
     
     mockups: `
-You are discussing UI design. Ask ONE specific question about:
+You are discussing UI design and creating HTML mockups. Ask ONE specific question about:
 - The main user interface
 - Key screens needed
 - Visual style preferences
-- User flow through the app`,
+- User flow through the app
+
+When creating mockups, generate COMPLETE self-contained HTML pages with:
+1. All CSS inline in <style> tags
+2. All JavaScript inline in <script> tags
+3. Responsive design using modern CSS (flexbox, grid)
+4. Professional UI with proper spacing, colors, and typography
+5. Semantic HTML with data-component attributes for future Vue conversion
+6. Interactive elements where appropriate (hover states, click handlers)
+7. Mobile-first design that works on all devices
+
+Example mockup structure:
+{
+  "type": "mockup",
+  "data": {
+    "name": "Dashboard Page",
+    "description": "Main dashboard showing user overview",
+    "type": "Page",
+    "content": "<!DOCTYPE html><html>...</html>"
+  }
+}`,
     
     features: `
 You are discovering features. Ask ONE specific question about:
@@ -360,15 +381,301 @@ function getMockResponse(messages: any[], activeTab: string, projectContext: any
       },
       {
         message: "Do you prefer a clean minimal design or something more colorful and playful?",
-        suggestions: [{
-          type: "mockup",
+        suggestions: [],
+        actions: [{
+          type: "create_mockup",
           data: {
             name: "Dashboard Mockup",
             description: "Visual representation of the main dashboard",
-            type: "Page"
+            type: "Page",
+            content: `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Your App</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #f7fafc;
+            color: #2d3748;
+            line-height: 1.6;
+        }
+        
+        /* Header */
+        .header {
+            background: white;
+            border-bottom: 1px solid #e2e8f0;
+            padding: 1rem;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .logo {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #4299e1;
+        }
+        
+        .user-menu {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        
+        .avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #4299e1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+        
+        /* Main Content */
+        .container {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+        
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        
+        .card {
+            background: white;
+            border-radius: 8px;
+            padding: 1.5rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        .card h3 {
+            font-size: 1.1rem;
+            color: #4a5568;
+            margin-bottom: 0.5rem;
+        }
+        
+        .metric {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #2d3748;
+            margin: 0.5rem 0;
+        }
+        
+        .trend {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+            font-size: 0.875rem;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+        }
+        
+        .trend.positive {
+            color: #48bb78;
+            background: #f0fff4;
+        }
+        
+        .trend.negative {
+            color: #f56565;
+            background: #fff5f5;
+        }
+        
+        /* Activity List */
+        .activity-section {
+            background: white;
+            border-radius: 8px;
+            padding: 1.5rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        
+        .activity-item {
+            display: flex;
+            align-items: start;
+            gap: 1rem;
+            padding: 1rem 0;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        
+        .activity-item:last-child {
+            border-bottom: none;
+        }
+        
+        .activity-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            background: #edf2f7;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        
+        .activity-content {
+            flex: 1;
+        }
+        
+        .activity-time {
+            font-size: 0.875rem;
+            color: #718096;
+        }
+        
+        /* Mobile Responsive */
+        @media (max-width: 768px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .header-content {
+                padding: 0 0.5rem;
+            }
+            
+            .metric {
+                font-size: 1.5rem;
+            }
+        }
+        
+        /* Interactive Elements */
+        button {
+            background: #4299e1;
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.875rem;
+            transition: background 0.2s;
+        }
+        
+        button:hover {
+            background: #3182ce;
+        }
+        
+        /* Vue conversion hints */
+        [data-component="dashboard-card"] {
+            /* Component boundary for Vue conversion */
+        }
+        
+        [data-component="activity-list"] {
+            /* Component boundary for Vue conversion */
+        }
+    </style>
+</head>
+<body>
+    <header class="header" data-component="app-header">
+        <div class="header-content">
+            <h1 class="logo">Your App</h1>
+            <div class="user-menu">
+                <button>New Project</button>
+                <div class="avatar">JD</div>
+            </div>
+        </div>
+    </header>
+    
+    <main class="container">
+        <h2 style="margin-bottom: 1.5rem; color: #2d3748;">Dashboard Overview</h2>
+        
+        <div class="dashboard-grid">
+            <div class="card" data-component="dashboard-card">
+                <h3>Total Projects</h3>
+                <div class="metric">24</div>
+                <span class="trend positive">↑ 12% from last month</span>
+            </div>
+            
+            <div class="card" data-component="dashboard-card">
+                <h3>Active Users</h3>
+                <div class="metric">1,234</div>
+                <span class="trend positive">↑ 8% from last week</span>
+            </div>
+            
+            <div class="card" data-component="dashboard-card">
+                <h3>Revenue</h3>
+                <div class="metric">$12,345</div>
+                <span class="trend negative">↓ 3% from last month</span>
+            </div>
+        </div>
+        
+        <div class="activity-section" data-component="activity-list">
+            <h3 style="margin-bottom: 1rem;">Recent Activity</h3>
+            
+            <div class="activity-item">
+                <div class="activity-icon">📊</div>
+                <div class="activity-content">
+                    <strong>New report generated</strong>
+                    <p style="color: #718096; font-size: 0.875rem;">Monthly analytics report is ready</p>
+                    <span class="activity-time">2 hours ago</span>
+                </div>
+            </div>
+            
+            <div class="activity-item">
+                <div class="activity-icon">👤</div>
+                <div class="activity-content">
+                    <strong>New user registered</strong>
+                    <p style="color: #718096; font-size: 0.875rem;">Sarah Johnson joined the platform</p>
+                    <span class="activity-time">5 hours ago</span>
+                </div>
+            </div>
+            
+            <div class="activity-item">
+                <div class="activity-icon">🚀</div>
+                <div class="activity-content">
+                    <strong>Project launched</strong>
+                    <p style="color: #718096; font-size: 0.875rem;">E-commerce redesign is now live</p>
+                    <span class="activity-time">1 day ago</span>
+                </div>
+            </div>
+        </div>
+    </main>
+    
+    <script>
+        // Add interactivity
+        document.querySelectorAll('.card').forEach(card => {
+            card.addEventListener('click', function() {
+                console.log('Card clicked:', this.querySelector('h3').textContent);
+                // In Vue, this would emit an event or navigate
+            });
+        });
+        
+        // Simulate real-time updates
+        setTimeout(() => {
+            const metrics = document.querySelectorAll('.metric');
+            metrics.forEach(metric => {
+                const current = parseInt(metric.textContent.replace(/[^0-9]/g, ''));
+                const isRevenue = metric.textContent.includes('$');
+                const newValue = current + Math.floor(Math.random() * 10);
+                metric.textContent = isRevenue ? '$' + newValue.toLocaleString() : newValue.toString();
+            });
+        }, 5000);
+    </script>
+</body>
+</html>`
           }
-        }],
-        actions: []
+        }]
       }
     ],
     features: [

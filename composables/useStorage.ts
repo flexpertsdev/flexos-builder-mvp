@@ -197,9 +197,17 @@ export const useStorage = () => {
       const existingIndex = mockups.findIndex((m: any) => m.id === mockup.id)
       
       if (existingIndex >= 0) {
-        mockups[existingIndex] = { ...mockups[existingIndex], ...mockup }
+        mockups[existingIndex] = { 
+          ...mockups[existingIndex], 
+          ...mockup,
+          updatedAt: new Date().toISOString()
+        }
       } else {
-        mockups.push(mockup)
+        mockups.push({
+          ...mockup,
+          createdAt: mockup.createdAt || new Date().toISOString(),
+          updatedAt: mockup.updatedAt || new Date().toISOString()
+        })
       }
       
       localStorage.setItem(`${STORAGE_KEYS.MOCKUPS}_${projectId}`, JSON.stringify(mockups))

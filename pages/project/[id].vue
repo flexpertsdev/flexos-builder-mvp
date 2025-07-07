@@ -703,6 +703,7 @@ const handleAIAction = async (action) => {
         description: action.data.description || '',
         type: action.data.type || 'Page',
         content: action.data.content || '',
+        html: action.data.content || '', // Store full HTML content
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       }
@@ -761,6 +762,7 @@ const handleAcceptSuggestion = (suggestion) => {
         description: suggestion.data?.description || suggestion.description,
         type: suggestion.data?.type || suggestion.preview?.type || 'Page',
         content: suggestion.data?.content || suggestion.preview?.content || '',
+        html: suggestion.data?.content || suggestion.preview?.content || '', // Store full HTML
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       }

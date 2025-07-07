@@ -94,8 +94,16 @@
             @click="openMockup(mockup)"
           >
             <h3 class="text-lg font-semibold mb-3">{{ mockup.name }}</h3>
-            <div class="bg-white rounded h-64 flex items-center justify-center text-gray-400">
-              <span>{{ mockup.type }} Mockup</span>
+            <div class="bg-white rounded h-64 overflow-hidden">
+              <iframe 
+                v-if="mockup.html || mockup.content"
+                :srcdoc="mockup.html || mockup.content"
+                class="w-full h-full border-0"
+                sandbox="allow-scripts"
+              ></iframe>
+              <div v-else class="h-full flex items-center justify-center text-gray-400">
+                <span>{{ mockup.type }} Mockup</span>
+              </div>
             </div>
             <p class="text-sm text-text-secondary mt-3">
               Last updated: {{ formatDate(mockup.updatedAt) }}
@@ -379,6 +387,23 @@
       </div>
       </div>
     </template>
+    
+    <!-- Mockup Viewer Modal -->
+    <Teleport to="body">
+      <div 
+        v-if="showMockupViewer && selectedMockup"
+        class="fixed inset-0 z-50 bg-black bg-opacity-50"
+        @click.self="showMockupViewer = false"
+      >
+        <div class="absolute inset-4 bg-bg-primary rounded-lg shadow-2xl overflow-hidden">
+          <MockupViewer
+            :mockup="selectedMockup"
+            @close="showMockupViewer = false"
+            @edit="handleEditMockup"
+          />
+        </div>
+      </div>
+    </Teleport>
   </div>
 </template>
 
@@ -388,6 +413,7 @@ import { useRouter, useRoute } from 'vue-router'
 import FeatureDetailView from '~/components/FeatureDetailView.vue'
 import PageDetailView from '~/components/PageDetailView.vue'
 import SuggestionCard from '~/components/SuggestionCard.vue'
+import MockupViewer from '~/components/MockupViewer.vue'
 
 const props = defineProps({
   activeTab: {
@@ -442,6 +468,10 @@ const projectId = computed(() => route.params.id)
 // Detail view state
 const activeDetailType = ref(null) // 'feature' | 'page' | null
 const activeDetailId = ref(null)
+
+// Mockup viewer state
+const showMockupViewer = ref(false)
+const selectedMockup = ref(null)
 
 // Filter suggestions by type
 const featureSuggestions = computed(() => 
@@ -538,8 +568,8 @@ const createMockup = () => {
 }
 
 const openMockup = (mockup) => {
-  // In a real app, this would open a mockup editor
-  console.log('Opening mockup:', mockup)
+  selectedMockup.value = mockup
+  showMockupViewer.value = true
 }
 
 // Navigate to feature detail view
@@ -580,5 +610,12 @@ const generateExecutiveSummary = () => {
   return `This document outlines the complete specifications for ${props.project.name}. ${props.project.description} 
     Through our conversation, we've identified ${props.features.length} key features, ${props.pages.length} pages, 
     and ${props.journeys.length} user journeys that will make your vision a reality.`
+}
+
+// Handle edit mockup
+const handleEditMockup = (mockup) => {
+  showMockupViewer.value = false
+  // In a real app, this would open the mockup editor
+  console.log('Edit mockup:', mockup)
 }
 </script>
