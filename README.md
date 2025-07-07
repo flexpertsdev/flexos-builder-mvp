@@ -15,21 +15,43 @@ FlexOS Builder is a conversational AI tool that transforms confused app ideas in
 - 🎨 **Dark Theme UI** - Professional, distraction-free interface
 - 🎯 **Focus Mode** - Full-screen conversation for deep discovery
 - 📊 **Progress Tracking** - Visual indicators of documentation completion
-- 🔒 **Simple Auth** - Easy login/signup flow (demo mode enabled)
+- 🔒 **Authentication** - Supabase auth with social logins (OAuth)
+- 💾 **Database Integration** - Persistent storage with Supabase
+- 🤖 **AI Integration Ready** - OpenAI/Anthropic API support
 
 ## 🚀 Quick Start
 
-### Development
+### Development (Demo Mode)
 
 ```bash
 # Install dependencies
 npm install
 
-# Start development server
+# Start development server (works without configuration)
 npm run dev
 ```
 
 Visit `http://localhost:3000`
+
+### Production Setup
+
+1. **Configure Supabase** (Optional but recommended):
+   ```bash
+   # Copy environment template
+   cp .env.example .env
+   
+   # Edit .env with your Supabase credentials
+   # Get them from https://app.supabase.com
+   ```
+
+2. **Set up Database**:
+   - Create a Supabase project
+   - Run `supabase/schema.sql` in SQL Editor
+   - Enable OAuth providers (Google, GitHub)
+
+3. **Configure AI** (Optional):
+   - Add OpenAI or Anthropic API key to .env
+   - AI features will activate automatically
 
 ### Production Build
 
@@ -114,21 +136,29 @@ The app uses a dark theme optimized for long working sessions:
 
 ## 🔧 Configuration
 
-### Environment Variables (Future)
+### Environment Variables
+
+Create a `.env` file based on `.env.example`:
 
 ```env
-# Supabase (when ready)
-SUPABASE_URL=your-project-url
+# Supabase Configuration (Optional - app works without it)
+SUPABASE_URL=https://your-project.supabase.co
 SUPABASE_ANON_KEY=your-anon-key
+SUPABASE_SERVICE_KEY=your-service-key
 
-# AI Integration (when ready)
-OPENAI_API_KEY=your-api-key
+# AI Integration (Optional)
+OPENAI_API_KEY=your-openai-api-key
+# OR
+ANTHROPIC_API_KEY=your-anthropic-api-key
 ```
+
+**Note**: The app works in demo mode without any configuration!
 
 ## 🚦 MVP Features
 
+### Completed
 - ✅ Landing page with value proposition
-- ✅ Simple auth flow (demo mode)
+- ✅ Authentication with Supabase (OAuth support)
 - ✅ Projects dashboard
 - ✅ Two-panel builder interface
 - ✅ WhatsApp-style chat
@@ -136,17 +166,24 @@ OPENAI_API_KEY=your-api-key
 - ✅ Focus mode
 - ✅ Dark theme
 - ✅ Tab navigation (Vision, Mockups, Features, Docs)
+- ✅ Database integration with Supabase
+- ✅ Demo mode (works without configuration)
+
+### In Progress
+- 🔄 Real AI integration (OpenAI/Anthropic)
+- 🔄 Detail pages (Features, Pages, Journeys)
+- 🔄 Mockup editor
+- 🔄 Export center
 
 ## 🔮 Future Enhancements
 
-- [ ] Real AI integration (OpenAI/Anthropic)
-- [ ] Supabase authentication & database
 - [ ] Document export (PDF, Markdown)
-- [ ] Real-time mockup editor
-- [ ] Team collaboration
+- [ ] Real-time collaboration
 - [ ] Template library
 - [ ] Mobile responsive design
 - [ ] PWA features
+- [ ] Usage analytics
+- [ ] Subscription management
 
 ## 📝 Demo Credentials
 

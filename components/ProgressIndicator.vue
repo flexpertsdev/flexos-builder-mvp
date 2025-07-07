@@ -1,19 +1,53 @@
 <template>
-  <div class="bg-bg-secondary rounded-lg p-4">
-    <div class="flex items-center justify-between mb-3">
-      <h3 class="font-semibold">Discovery Progress</h3>
-      <span class="text-sm text-primary font-medium">{{ progress }}%</span>
+  <div class="bg-bg-secondary rounded-lg overflow-hidden transition-all duration-300">
+    <!-- Collapsible header -->
+    <button 
+      @click="toggleExpanded"
+      class="w-full p-4 flex items-center justify-between hover:bg-bg-tertiary transition-colors group"
+    >
+      <div class="flex items-center gap-3">
+        <h3 class="font-semibold">Discovery Progress</h3>
+        <span class="text-sm text-primary font-medium">{{ progress }}%</span>
+      </div>
+      <svg 
+        :class="['w-4 h-4 text-text-muted group-hover:text-text-secondary transition-all duration-200', { 'rotate-180': isExpanded }]" 
+        fill="none" 
+        stroke="currentColor" 
+        viewBox="0 0 24 24"
+      >
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+      </svg>
+    </button>
+    
+    <!-- Collapsed state - show minimal progress bar -->
+    <div v-if="!isExpanded" class="px-4 pb-4 -mt-1">
+      <div class="progress-bar h-1">
+        <div 
+          class="progress-fill h-1"
+          :style="`width: ${progress}%`"
+        ></div>
+      </div>
     </div>
     
-    <!-- Progress bar -->
-    <div class="progress-bar mb-4">
-      <div 
-        class="progress-fill"
-        :style="`width: ${progress}%`"
-      ></div>
-    </div>
-    
-    <!-- Progress items -->
+    <!-- Expanded state - show full content -->
+    <transition
+      enter-active-class="transition-all duration-300 ease-out"
+      leave-active-class="transition-all duration-300 ease-in"
+      enter-from-class="opacity-0 max-h-0"
+      enter-to-class="opacity-100 max-h-[600px]"
+      leave-from-class="opacity-100 max-h-[600px]"
+      leave-to-class="opacity-0 max-h-0"
+    >
+      <div v-if="isExpanded" class="px-4 pb-4 overflow-hidden">
+      <!-- Progress bar -->
+      <div class="progress-bar mb-4">
+        <div 
+          class="progress-fill"
+          :style="`width: ${progress}%`"
+        ></div>
+      </div>
+      
+      <!-- Progress items -->
     <div class="space-y-2">
       <div 
         v-for="item in progressItems" 
@@ -42,21 +76,40 @@
       </div>
     </div>
     
-    <!-- Insights -->
-    <div v-if="nextSteps.length > 0" class="mt-4 pt-4 border-t border-border-primary">
-      <p class="text-sm text-text-secondary mb-2">Suggested next steps:</p>
-      <ul class="space-y-1">
-        <li v-for="step in nextSteps" :key="step" class="text-sm text-text-muted flex items-start gap-2">
-          <span class="text-primary">→</span>
-          <span>{{ step }}</span>
-        </li>
-      </ul>
+      <!-- Insights -->
+      <div v-if="nextSteps.length > 0" class="mt-4 pt-4 border-t border-border-primary">
+        <p class="text-sm text-text-secondary mb-2">Suggested next steps:</p>
+        <ul class="space-y-1">
+          <li v-for="step in nextSteps" :key="step" class="text-sm text-text-muted flex items-start gap-2">
+            <span class="text-primary">→</span>
+            <span>{{ step }}</span>
+          </li>
+        </ul>
+      </div>
     </div>
+    </transition>
   </div>
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
+
+// Collapsed/expanded state with localStorage persistence
+const isExpanded = ref(true)
+
+// Load saved state on mount
+onMounted(() => {
+  const savedState = localStorage.getItem('progress-indicator-expanded')
+  if (savedState !== null) {
+    isExpanded.value = savedState === 'true'
+  }
+})
+
+// Save state when toggled
+const toggleExpanded = () => {
+  isExpanded.value = !isExpanded.value
+  localStorage.setItem('progress-indicator-expanded', String(isExpanded.value))
+}
 
 const props = defineProps({
   conversations: {

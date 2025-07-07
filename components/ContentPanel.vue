@@ -1,22 +1,48 @@
 <template>
   <div class="flex flex-col h-full">
-    <!-- Tabs -->
-    <div class="flex border-b border-border-primary flex-shrink-0">
-      <button
-        v-for="tab in tabs"
-        :key="tab.id"
-        @click="$emit('tab-change', tab.id)"
-        :class="['tab', { active: activeTab === tab.id }]"
-      >
-        {{ tab.label }}
-        <span v-if="tab.count" class="ml-2 text-xs bg-bg-tertiary px-2 py-0.5 rounded-full">
-          {{ tab.count }}
-        </span>
-      </button>
-    </div>
+    <!-- Show detail views when active -->
+    <FeatureDetailView
+      v-if="activeDetailType === 'feature' && activeDetailId"
+      :project-id="projectId"
+      :feature-id="activeDetailId"
+      @back="clearDetail"
+      @update-context="handleDetailContext"
+    />
     
-    <!-- Tab content -->
-    <div class="flex-1 overflow-y-auto p-6">
+    <PageDetailView
+      v-else-if="activeDetailType === 'page' && activeDetailId"
+      :project-id="projectId"
+      :page-id="activeDetailId"
+      @back="clearDetail"
+      @update-context="handleDetailContext"
+    />
+    
+    <!-- Regular content when no detail view is active -->
+    <template v-else>
+      <!-- Tabs -->
+      <div class="flex border-b border-border-primary flex-shrink-0">
+        <button
+          v-for="tab in tabs"
+          :key="tab.id"
+          @click="$emit('tab-change', tab.id)"
+          :class="['tab', { active: activeTab === tab.id }]"
+        >
+          {{ tab.label }}
+          <span v-if="tab.count" class="ml-2 text-xs bg-bg-tertiary px-2 py-0.5 rounded-full">
+            {{ tab.count }}
+          </span>
+          <!-- Suggestion badge -->
+          <span 
+            v-if="tab.suggestionCount > 0" 
+            class="ml-1 text-xs bg-primary text-white px-1.5 py-0.5 rounded-full animate-pulse"
+          >
+            {{ tab.suggestionCount }}
+          </span>
+        </button>
+      </div>
+      
+      <!-- Tab content -->
+      <div class="flex-1 overflow-y-auto p-6">
       <!-- Vision Tab -->
       <div v-if="activeTab === 'vision'" class="prose prose-invert max-w-none">
         <h2 class="text-2xl font-bold mb-4">Project Vision</h2>
@@ -111,11 +137,35 @@
           </div>
         </div>
         
+        <!-- Feature Suggestions -->
+        <div v-if="featureSuggestions.length > 0" class="mb-6">
+          <div class="flex items-center justify-between mb-3">
+            <h3 class="text-sm font-semibold text-text-secondary">AI Suggestions</h3>
+            <button 
+              @click="$emit('clear-feature-suggestions')"
+              class="text-xs text-text-muted hover:text-text-primary"
+            >
+              Clear all
+            </button>
+          </div>
+          <div class="space-y-2">
+            <SuggestionCard
+              v-for="suggestion in featureSuggestions"
+              :key="suggestion.id"
+              :suggestion="suggestion"
+              @accept="$emit('accept-suggestion', suggestion)"
+              @modify="$emit('modify-suggestion', $event)"
+              @reject="$emit('reject-suggestion', suggestion.id)"
+            />
+          </div>
+        </div>
+        
         <div v-if="filteredFeatures.length > 0" class="space-y-4">
           <div 
             v-for="feature in filteredFeatures" 
             :key="feature.id"
-            class="bg-bg-tertiary rounded-lg p-4 hover:bg-bg-quaternary transition-colors"
+            @click="navigateToFeature(feature.id)"
+            class="bg-bg-tertiary rounded-lg p-4 hover:bg-bg-quaternary transition-colors cursor-pointer"
           >
             <div class="flex items-center justify-between mb-2">
               <h3 class="font-semibold">{{ feature.name }}</h3>
@@ -170,10 +220,34 @@
           </div>
         </div>
         
+        <!-- Page Suggestions -->
+        <div v-if="pageSuggestions.length > 0" class="mb-6">
+          <div class="flex items-center justify-between mb-3">
+            <h3 class="text-sm font-semibold text-text-secondary">AI Suggestions</h3>
+            <button 
+              @click="$emit('clear-page-suggestions')"
+              class="text-xs text-text-muted hover:text-text-primary"
+            >
+              Clear all
+            </button>
+          </div>
+          <div class="space-y-2">
+            <SuggestionCard
+              v-for="suggestion in pageSuggestions"
+              :key="suggestion.id"
+              :suggestion="suggestion"
+              @accept="$emit('accept-suggestion', suggestion)"
+              @modify="$emit('modify-suggestion', $event)"
+              @reject="$emit('reject-suggestion', suggestion.id)"
+            />
+          </div>
+        </div>
+        
         <div v-if="filteredPages.length > 0" class="grid grid-cols-2 gap-4">
           <div 
             v-for="page in filteredPages" 
             :key="page.id"
+            @click="navigateToPage(page.id)"
             class="bg-bg-tertiary rounded-lg p-4 hover:bg-bg-quaternary transition-colors cursor-pointer"
           >
             <h3 class="font-semibold mb-2">{{ page.name }}</h3>
@@ -199,6 +273,29 @@
       <!-- Journeys Tab -->
       <div v-if="activeTab === 'journeys'" class="space-y-6">
         <h2 class="text-2xl font-bold mb-4">User Journeys</h2>
+        
+        <!-- Journey Suggestions -->
+        <div v-if="journeySuggestions.length > 0" class="mb-6">
+          <div class="flex items-center justify-between mb-3">
+            <h3 class="text-sm font-semibold text-text-secondary">AI Suggestions</h3>
+            <button 
+              @click="$emit('clear-journey-suggestions')"
+              class="text-xs text-text-muted hover:text-text-primary"
+            >
+              Clear all
+            </button>
+          </div>
+          <div class="space-y-2">
+            <SuggestionCard
+              v-for="suggestion in journeySuggestions"
+              :key="suggestion.id"
+              :suggestion="suggestion"
+              @accept="$emit('accept-suggestion', suggestion)"
+              @modify="$emit('modify-suggestion', $event)"
+              @reject="$emit('reject-suggestion', suggestion.id)"
+            />
+          </div>
+        </div>
         
         <div v-if="journeys.length > 0" class="space-y-6">
           <div 
@@ -280,12 +377,17 @@
           </div>
         </div>
       </div>
-    </div>
+      </div>
+    </template>
   </div>
 </template>
 
 <script setup>
 import { ref, computed } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
+import FeatureDetailView from '~/components/FeatureDetailView.vue'
+import PageDetailView from '~/components/PageDetailView.vue'
+import SuggestionCard from '~/components/SuggestionCard.vue'
 
 const props = defineProps({
   activeTab: {
@@ -311,19 +413,89 @@ const props = defineProps({
   mockups: {
     type: Array,
     default: () => []
+  },
+  pendingSuggestions: {
+    type: Array,
+    default: () => []
   }
 })
 
-const emit = defineEmits(['tab-change', 'update-content', 'export-docs'])
+const emit = defineEmits([
+  'tab-change', 
+  'update-content', 
+  'export-docs', 
+  'update-context',
+  'accept-suggestion',
+  'modify-suggestion',
+  'reject-suggestion',
+  'clear-feature-suggestions',
+  'clear-page-suggestions',
+  'clear-journey-suggestions'
+])
 
-// Tab configuration with counts
+const router = useRouter()
+const route = useRoute()
+
+// Project ID from route
+const projectId = computed(() => route.params.id)
+
+// Detail view state
+const activeDetailType = ref(null) // 'feature' | 'page' | null
+const activeDetailId = ref(null)
+
+// Filter suggestions by type
+const featureSuggestions = computed(() => 
+  props.pendingSuggestions.filter(s => s.type === 'feature' && s.status === 'pending')
+)
+
+const pageSuggestions = computed(() => 
+  props.pendingSuggestions.filter(s => s.type === 'page' && s.status === 'pending')
+)
+
+const journeySuggestions = computed(() => 
+  props.pendingSuggestions.filter(s => s.type === 'journey' && s.status === 'pending')
+)
+
+const mockupSuggestions = computed(() => 
+  props.pendingSuggestions.filter(s => s.type === 'mockup' && s.status === 'pending')
+)
+
+// Tab configuration with counts and suggestion counts
 const tabs = computed(() => [
-  { id: 'vision', label: 'Vision' },
-  { id: 'mockups', label: 'Mockups', count: props.mockups.length || null },
-  { id: 'features', label: 'Features', count: props.features.length || null },
-  { id: 'pages', label: 'Pages', count: props.pages.length || null },
-  { id: 'journeys', label: 'Journeys', count: props.journeys.length || null },
-  { id: 'docs', label: 'Documentation' }
+  { 
+    id: 'vision', 
+    label: 'Vision',
+    suggestionCount: 0 // Vision doesn't have direct suggestions
+  },
+  { 
+    id: 'mockups', 
+    label: 'Mockups', 
+    count: props.mockups.length || null,
+    suggestionCount: mockupSuggestions.value.length
+  },
+  { 
+    id: 'features', 
+    label: 'Features', 
+    count: props.features.length || null,
+    suggestionCount: featureSuggestions.value.length
+  },
+  { 
+    id: 'pages', 
+    label: 'Pages', 
+    count: props.pages.length || null,
+    suggestionCount: pageSuggestions.value.length
+  },
+  { 
+    id: 'journeys', 
+    label: 'Journeys', 
+    count: props.journeys.length || null,
+    suggestionCount: journeySuggestions.value.length
+  },
+  { 
+    id: 'docs', 
+    label: 'Documentation',
+    suggestionCount: 0 // Docs doesn't have direct suggestions
+  }
 ])
 
 // Filters
@@ -368,6 +540,29 @@ const createMockup = () => {
 const openMockup = (mockup) => {
   // In a real app, this would open a mockup editor
   console.log('Opening mockup:', mockup)
+}
+
+// Navigate to feature detail view
+const navigateToFeature = (featureId) => {
+  activeDetailType.value = 'feature'
+  activeDetailId.value = featureId
+}
+
+// Navigate to page detail view
+const navigateToPage = (pageId) => {
+  activeDetailType.value = 'page'
+  activeDetailId.value = pageId
+}
+
+// Clear detail view and go back to list
+const clearDetail = () => {
+  activeDetailType.value = null
+  activeDetailId.value = null
+}
+
+// Handle context update from detail views
+const handleDetailContext = (context) => {
+  emit('update-context', context)
 }
 
 // Helpers

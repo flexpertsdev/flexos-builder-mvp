@@ -19,6 +19,18 @@
         </div>
         
         <div class="flex items-center gap-3">
+          <!-- Demo/Live Mode Toggle -->
+          <div class="flex items-center gap-2 px-3 py-1.5 bg-bg-tertiary rounded-md border border-border-primary">
+            <button
+              @click="toggleAIMode"
+              class="flex items-center gap-2 text-sm"
+              :class="isDemo ? 'text-warning' : 'text-success'"
+            >
+              <div class="w-2 h-2 rounded-full" :class="isDemo ? 'bg-warning' : 'bg-success'"></div>
+              {{ isDemo ? 'Demo Mode' : 'Live Mode' }}
+            </button>
+          </div>
+          
           <button 
             @click="enterFocusMode"
             class="btn btn-focus"
@@ -81,25 +93,32 @@
     <!-- Two-panel layout -->
     <div class="flex-1 flex overflow-hidden">
       <!-- Left Panel: Chat (40%) -->
-      <div class="w-2/5 flex flex-col bg-bg-primary border-r border-border-primary">
-        <!-- Progress indicator -->
-        <div class="p-4 border-b border-border-primary">
-          <ProgressIndicator
-            :conversations="messages"
-            :features="features"
-            :pages="pages"
-            :journeys="journeys"
-            :mockups="mockups"
-          />
+      <div class="w-2/5 flex flex-col bg-bg-primary border-r border-border-primary overflow-hidden">
+        <!-- Progress indicator with conditional border -->
+        <div class="flex-shrink-0">
+          <div class="p-4 border-b border-border-primary">
+            <ProgressIndicator
+              :conversations="messages"
+              :features="features"
+              :pages="pages"
+              :journeys="journeys"
+              :mockups="mockups"
+            />
+          </div>
         </div>
         
         <!-- Chat panel -->
-        <div class="flex-1 flex flex-col">
+        <div class="flex-1 overflow-hidden">
           <ChatPanel 
             :messages="messages" 
             :context="contextItems"
+            :features="features"
+            :pages="pages"
+            :journeys="journeys"
             @send="handleSendMessage"
             @attach="handleAttachment"
+            @update-context="handleContextUpdate"
+            @accept-suggestion="handleAcceptSuggestion"
           />
         </div>
       </div>
@@ -113,8 +132,16 @@
           :pages="pages"
           :journeys="journeys"
           :mockups="mockups"
+          :pendingSuggestions="pendingSuggestions"
           @tab-change="activeTab = $event"
           @update-content="handleContentUpdate"
+          @update-context="updateChatContext"
+          @accept-suggestion="handleAcceptSuggestion"
+          @modify-suggestion="handleModifySuggestion"
+          @reject-suggestion="handleRejectSuggestion"
+          @clear-feature-suggestions="clearSuggestionsByType('feature')"
+          @clear-page-suggestions="clearSuggestionsByType('page')"
+          @clear-journey-suggestions="clearSuggestionsByType('journey')"
         />
       </div>
     </div>
@@ -212,6 +239,9 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useStorage } from '~/composables/useStorage'
+import { useDatabase } from '~/composables/useDatabase'
+import { useAI } from '~/composables/useAI'
+import { useSuggestions } from '~/composables/useSuggestions'
 import ChatPanel from '~/components/ChatPanel.vue'
 import ContentPanel from '~/components/ContentPanel.vue'
 import FocusMode from '~/components/FocusMode.vue'
@@ -226,6 +256,9 @@ definePageMeta({
 const route = useRoute()
 const router = useRouter()
 const storage = useStorage()
+const db = useDatabase()
+const ai = useAI()
+const { pendingSuggestions, addSuggestion, acceptSuggestion, rejectSuggestion, modifySuggestion } = useSuggestions()
 
 // Project data
 const projectId = computed(() => route.params.id)
@@ -241,6 +274,7 @@ const activeTab = ref('vision')
 const showFocusMode = ref(false)
 const showAddContext = ref(false)
 const showDashboard = ref(false)
+const isDemo = ref(false)
 
 // Context management
 const contextItems = ref({
@@ -366,16 +400,27 @@ const getAIResponse = () => {
 }
 
 // Handle sending messages
-const handleSendMessage = async (content) => {
+const handleSendMessage = async (content, attachments = [], context = []) => {
   // Add user message
   const userMessage = {
     id: `msg-${Date.now()}`,
     role: 'user',
     content,
+    attachments,
+    context,
     timestamp: new Date().toISOString()
   }
   messages.value.push(userMessage)
-  storage.saveConversation(projectId.value, userMessage)
+  
+  // Save to database
+  if (db.createConversation) {
+    await db.createConversation({
+      project_id: projectId.value,
+      messages: messages.value
+    })
+  } else {
+    storage.saveConversation(projectId.value, userMessage)
+  }
   
   // Show typing indicator
   const typingMessage = {
@@ -386,44 +431,342 @@ const handleSendMessage = async (content) => {
   }
   messages.value.push(typingMessage)
   
-  // Simulate AI thinking
-  await new Promise(resolve => setTimeout(resolve, 1500))
-  
-  // Remove typing indicator and add AI response
-  messages.value = messages.value.filter(m => m.id !== 'typing')
-  
-  const aiMessage = {
-    id: `msg-${Date.now()}`,
-    role: 'assistant',
-    content: getAIResponse(),
-    timestamp: new Date().toISOString()
-  }
-  messages.value.push(aiMessage)
-  storage.saveConversation(projectId.value, aiMessage)
-  
-  // Sometimes create features or pages based on conversation
-  if (Math.random() > 0.7 && features.value.length < 5) {
-    const featureNames = [
-      'User Authentication',
-      'Product Catalog',
-      'Shopping Cart',
-      'Payment Processing',
-      'Order Management',
-      'Customer Support',
-      'Analytics Dashboard',
-      'Email Notifications'
-    ]
+  try {
+    // Prepare messages for AI (remove typing indicators)
+    const aiMessages = messages.value
+      .filter(m => !m.typing)
+      .map(m => ({
+        role: m.role,
+        content: m.content
+      }))
     
-    const newFeature = {
-      id: `feat-${Date.now()}`,
-      name: featureNames[features.value.length % featureNames.length],
-      description: 'Auto-discovered from our conversation',
-      priority: 'high',
-      status: 'discovered'
+    // Build project context
+    const projectContext = {
+      name: project.value?.name,
+      description: project.value?.description,
+      targetAudience: project.value?.target_audience,
+      vision: project.value?.vision,
+      features: features.value,
+      pages: pages.value,
+      journeys: journeys.value,
+      messageContext: userMessage.context || []
     }
     
-    features.value.push(newFeature)
-    storage.saveFeature(projectId.value, newFeature)
+    // Use streaming if available
+    if (ai.streamMessage) {
+      let streamedContent = ''
+      const aiMessageId = `msg-${Date.now()}`
+      
+      // Remove typing indicator and add empty AI message
+      messages.value = messages.value.filter(m => m.id !== 'typing')
+      const aiMessage = {
+        id: aiMessageId,
+        role: 'assistant',
+        content: '',
+        timestamp: new Date().toISOString()
+      }
+      messages.value.push(aiMessage)
+      
+      // Get AI mode from localStorage
+      const aiMode = localStorage.getItem('ai-mode') || 'live'
+      
+      // Stream the response with structured data support
+      await ai.streamMessage(
+        aiMessages,
+        projectContext,
+        activeTab.value,
+        (chunk) => {
+          streamedContent += chunk
+          const msgIndex = messages.value.findIndex(m => m.id === aiMessageId)
+          if (msgIndex !== -1) {
+            messages.value[msgIndex].content = streamedContent
+          }
+        },
+        async () => {
+          // Save completed message
+          const finalMessage = messages.value.find(m => m.id === aiMessageId)
+          if (finalMessage) {
+            if (db.updateConversation) {
+              await db.updateConversation(projectId.value, {
+                messages: messages.value
+              })
+            } else {
+              storage.saveConversation(projectId.value, finalMessage)
+            }
+          }
+        },
+        {
+          mode: aiMode,
+          onSuggestion: (suggestion) => {
+            // Add structured suggestions to the queue
+            if (suggestion.type && suggestion.data) {
+              addSuggestion({
+                type: suggestion.type,
+                title: suggestion.data.name || suggestion.data.title || 'New ' + suggestion.type,
+                description: suggestion.data.description || '',
+                preview: suggestion.data,
+                data: suggestion.data
+              })
+            }
+          },
+          onAction: async (action) => {
+            // Handle actions like updating vision, description, etc.
+            await handleAIAction(action)
+          }
+        }
+      )
+    } else {
+      // Fallback to non-streaming
+      const response = await ai.sendMessage(aiMessages, projectContext, activeTab.value)
+      
+      // Remove typing indicator and add AI response
+      messages.value = messages.value.filter(m => m.id !== 'typing')
+      
+      const aiMessage = {
+        id: `msg-${Date.now()}`,
+        role: 'assistant',
+        content: response.content,
+        timestamp: new Date().toISOString()
+      }
+      messages.value.push(aiMessage)
+      
+      if (db.updateConversation) {
+        await db.updateConversation(projectId.value, {
+          messages: messages.value,
+          total_tokens: response.usage?.total_tokens || 0
+        })
+      } else {
+        storage.saveConversation(projectId.value, aiMessage)
+      }
+      
+      // Auto-generate project data based on conversation
+      await autoGenerateProjectData(response.content)
+    }
+  } catch (error) {
+    console.error('AI Error:', error)
+    
+    // Remove typing indicator
+    messages.value = messages.value.filter(m => m.id !== 'typing')
+    
+    // Show error message
+    const errorMessage = {
+      id: `msg-${Date.now()}`,
+      role: 'assistant',
+      content: 'I apologize, but I encountered an error. Please try again or continue with your description.',
+      timestamp: new Date().toISOString()
+    }
+    messages.value.push(errorMessage)
+    storage.saveConversation(projectId.value, errorMessage)
+  }
+}
+
+// Auto-generate all types of project data from AI responses
+const autoGenerateProjectData = async (aiContent) => {
+  const contentLower = aiContent.toLowerCase()
+  
+  // Feature patterns and keywords
+  const featurePatterns = {
+    'authentication': { name: 'User Authentication', category: 'Security', priority: 'high' },
+    'login': { name: 'User Login', category: 'Security', priority: 'high' },
+    'sign up': { name: 'User Registration', category: 'Security', priority: 'high' },
+    'payment': { name: 'Payment Processing', category: 'Commerce', priority: 'high' },
+    'checkout': { name: 'Checkout Flow', category: 'Commerce', priority: 'high' },
+    'cart': { name: 'Shopping Cart', category: 'Commerce', priority: 'medium' },
+    'search': { name: 'Search Functionality', category: 'Discovery', priority: 'medium' },
+    'filter': { name: 'Product Filtering', category: 'Discovery', priority: 'medium' },
+    'notification': { name: 'Notifications', category: 'Engagement', priority: 'medium' },
+    'dashboard': { name: 'Analytics Dashboard', category: 'Analytics', priority: 'medium' },
+    'profile': { name: 'User Profile', category: 'User Management', priority: 'medium' },
+    'settings': { name: 'User Settings', category: 'User Management', priority: 'low' }
+  }
+  
+  // Page patterns
+  const pagePatterns = {
+    'home page': { name: 'Home Page', type: 'public', description: 'Main landing page' },
+    'landing page': { name: 'Landing Page', type: 'public', description: 'Marketing landing page' },
+    'dashboard': { name: 'Dashboard', type: 'auth', description: 'User dashboard' },
+    'profile': { name: 'Profile Page', type: 'auth', description: 'User profile management' },
+    'settings': { name: 'Settings Page', type: 'auth', description: 'Application settings' },
+    'admin': { name: 'Admin Panel', type: 'admin', description: 'Administrative interface' },
+    'product page': { name: 'Product Details', type: 'public', description: 'Individual product view' },
+    'checkout': { name: 'Checkout Page', type: 'auth', description: 'Payment and order completion' }
+  }
+  
+  // Journey patterns
+  const journeyPatterns = {
+    'sign up flow': { 
+      name: 'User Registration Journey',
+      steps: [
+        { title: 'Landing Page', description: 'User arrives at the site' },
+        { title: 'Sign Up Form', description: 'User fills registration details' },
+        { title: 'Email Verification', description: 'User verifies email' },
+        { title: 'Profile Setup', description: 'User completes profile' }
+      ]
+    },
+    'purchase flow': {
+      name: 'Purchase Journey',
+      steps: [
+        { title: 'Browse Products', description: 'User explores catalog' },
+        { title: 'Add to Cart', description: 'User selects items' },
+        { title: 'Checkout', description: 'User enters payment info' },
+        { title: 'Order Confirmation', description: 'Purchase complete' }
+      ]
+    }
+  }
+  
+  // Check for features
+  for (const [keyword, featureData] of Object.entries(featurePatterns)) {
+    if (contentLower.includes(keyword)) {
+      const exists = features.value.find(f => f.name === featureData.name)
+      if (!exists) {
+        const newFeature = {
+          id: `feat-${Date.now()}-${Math.random()}`,
+          ...featureData,
+          description: 'Discovered from conversation',
+          status: 'discovered'
+        }
+        
+        features.value.push(newFeature)
+        storage.saveFeature(projectId.value, newFeature)
+        break // Only add one item per message
+      }
+    }
+  }
+  
+  // Check for pages
+  for (const [keyword, pageData] of Object.entries(pagePatterns)) {
+    if (contentLower.includes(keyword)) {
+      const exists = pages.value.find(p => p.name === pageData.name)
+      if (!exists) {
+        const newPage = {
+          id: `page-${Date.now()}-${Math.random()}`,
+          ...pageData,
+          status: 'design',
+          createdAt: new Date().toISOString()
+        }
+        
+        pages.value.push(newPage)
+        storage.savePage(projectId.value, newPage)
+        break
+      }
+    }
+  }
+  
+  // Check for journeys
+  for (const [keyword, journeyData] of Object.entries(journeyPatterns)) {
+    if (contentLower.includes(keyword)) {
+      const exists = journeys.value.find(j => j.name === journeyData.name)
+      if (!exists) {
+        const newJourney = {
+          id: `journey-${Date.now()}-${Math.random()}`,
+          ...journeyData,
+          description: 'User flow discovered from conversation',
+          createdAt: new Date().toISOString()
+        }
+        
+        journeys.value.push(newJourney)
+        storage.saveJourney(projectId.value, newJourney)
+        break
+      }
+    }
+  }
+}
+
+// Handle AI actions (vision updates, etc.)
+const handleAIAction = async (action) => {
+  switch (action.type) {
+    case 'update_vision':
+      if (project.value && action.data.vision) {
+        project.value.vision = action.data.vision
+        storage.saveProject(project.value)
+      }
+      break
+      
+    case 'update_description':
+      if (project.value && action.data.description) {
+        project.value.description = action.data.description
+        storage.saveProject(project.value)
+      }
+      break
+      
+    case 'update_target_audience':
+      if (project.value && action.data.targetAudience) {
+        project.value.target_audience = action.data.targetAudience
+        storage.saveProject(project.value)
+      }
+      break
+      
+    case 'create_mockup':
+      const newMockup = {
+        id: `mockup-${Date.now()}-${Math.random()}`,
+        name: action.data.name || 'New Mockup',
+        description: action.data.description || '',
+        type: action.data.type || 'Page',
+        content: action.data.content || '',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      }
+      mockups.value.push(newMockup)
+      storage.saveMockup(projectId.value, newMockup)
+      break
+  }
+}
+
+// Handle accepted suggestions from ChatPanel
+const handleAcceptSuggestion = (suggestion) => {
+  switch (suggestion.type) {
+    case 'feature':
+      const newFeature = {
+        id: `feat-${Date.now()}-${Math.random()}`,
+        name: suggestion.data?.name || suggestion.title,
+        description: suggestion.data?.description || suggestion.description,
+        priority: suggestion.data?.priority || suggestion.preview?.priority || 'medium',
+        category: suggestion.data?.category || suggestion.preview?.category || 'Suggested Features',
+        status: 'discovered'
+      }
+      features.value.push(newFeature)
+      storage.saveFeature(projectId.value, newFeature)
+      break
+      
+    case 'page':
+      const newPage = {
+        id: `page-${Date.now()}-${Math.random()}`,
+        name: suggestion.data?.name || suggestion.title,
+        description: suggestion.data?.description || suggestion.description,
+        type: suggestion.data?.type || suggestion.preview?.type || 'page',
+        sections: suggestion.data?.sections || suggestion.preview?.sections || [],
+        status: 'design',
+        createdAt: new Date().toISOString()
+      }
+      pages.value.push(newPage)
+      storage.savePage(projectId.value, newPage)
+      break
+      
+    case 'journey':
+      const newJourney = {
+        id: `journey-${Date.now()}-${Math.random()}`,
+        name: suggestion.data?.name || suggestion.title,
+        description: suggestion.data?.description || suggestion.description,
+        steps: suggestion.data?.steps || suggestion.preview?.steps || [],
+        createdAt: new Date().toISOString()
+      }
+      journeys.value.push(newJourney)
+      storage.saveJourney(projectId.value, newJourney)
+      break
+      
+    case 'mockup':
+      const newMockup = {
+        id: `mockup-${Date.now()}-${Math.random()}`,
+        name: suggestion.data?.name || suggestion.title,
+        description: suggestion.data?.description || suggestion.description,
+        type: suggestion.data?.type || suggestion.preview?.type || 'Page',
+        content: suggestion.data?.content || suggestion.preview?.content || '',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      }
+      mockups.value.push(newMockup)
+      storage.saveMockup(projectId.value, newMockup)
+      break
   }
 }
 
@@ -431,6 +774,12 @@ const handleSendMessage = async (content) => {
 const handleAttachment = (file) => {
   console.log('File attached:', file)
   // In a real app, this would process the file
+}
+
+// Handle context update from ChatPanel
+const handleContextUpdate = (newContext) => {
+  // Update local context tracking if needed
+  console.log('Context updated:', newContext)
 }
 
 // Add context
@@ -509,6 +858,15 @@ const handleContentUpdate = ({ type, data }) => {
   }
 }
 
+// Update chat context from ContentPanel
+const updateChatContext = (context) => {
+  if (context.type === 'feature') {
+    addContext('feature', context.item)
+  } else if (context.type === 'page') {
+    addContext('page', context.item)
+  }
+}
+
 // Export documentation
 const exportDocumentation = () => {
   // In a real app, this would generate and download documentation
@@ -526,9 +884,43 @@ const handleProjectSwitch = (projectId) => {
   // Dashboard overlay handles the navigation
 }
 
+// Toggle AI mode between demo and live
+const toggleAIMode = () => {
+  isDemo.value = !isDemo.value
+  localStorage.setItem('ai-mode', isDemo.value ? 'demo' : 'live')
+}
+
+// Handle modify suggestion from ContentPanel
+const handleModifySuggestion = ({ originalId, modified }) => {
+  const updated = modifySuggestion(originalId, modified)
+  if (updated) {
+    handleAcceptSuggestion(updated)
+  }
+}
+
+// Handle reject suggestion from ContentPanel
+const handleRejectSuggestion = (suggestionId) => {
+  rejectSuggestion(suggestionId)
+}
+
+// Clear suggestions by type
+const clearSuggestionsByType = (type) => {
+  // Get all pending suggestions of this type
+  const suggestionsOfType = pendingSuggestions.value.filter(s => s.type === type && s.status === 'pending')
+  
+  // Reject each one
+  suggestionsOfType.forEach(s => {
+    rejectSuggestion(s.id)
+  })
+}
+
 // Initialize
 onMounted(() => {
   loadProjectData()
+  
+  // Load AI mode preference
+  const savedMode = localStorage.getItem('ai-mode')
+  isDemo.value = savedMode === 'demo'
 })
 
 // Update project name
